@@ -22,34 +22,23 @@ Redeploy after any change with `vercel deploy --prod --yes` from this directory.
 Every field in `submission/apps.json.entry.json` is filled. Add `links.x` and
 `team[0].x` if you want them; `null` is accepted.
 
-## 4. PR to the submissions repo
+## 4. PR to the submissions repo — done
 
-Fork `cookiechain/superteam-hackathon-submissions`, then:
+**<https://github.com/cookiechain/superteam-hackathon-submissions/pull/5>** — open and
+mergeable, +39 −0, logo and three screenshots committed to the repo as required.
 
-```bash
-cp brand/crumbs.png <fork>/logos/crumbs.png
-mkdir -p <fork>/screenshots/crumbs
-cp brand/screenshots/*.png <fork>/screenshots/crumbs/
-```
+Registered as **`crumbs-portfolio`**, not `crumbs`. PR #3 (WolfurX, opened ~18h earlier)
+claimed that id for a different app, and both entries would otherwise have written to
+`logos/crumbs.png` and `screenshots/crumbs/` as well — whoever merged second would have
+failed the duplicate-id check and conflicted on both paths. The product is still Crumbs
+everywhere else; only the registry id and title differ.
 
-Append the entry to `apps.json` and update `media.screenshots` to the raw URLs of the
-files you just committed. **External media links are rejected** — every URL must be
-`raw.githubusercontent.com/cookiechain/superteam-hackathon-submissions/main/...`.
+Their four validators pass on this entry: valid JSON, no duplicate id, no externally hosted
+media, every referenced file present. Note the shared external-media check fails on the
+seed `cookie-mcp` entry, whose banner is an x.com URL — not ours, flagged in the PR.
 
-Their validators, run before opening the PR:
-
-```bash
-jq empty apps.json
-jq -r '[.[].id] | group_by(.) | map(select(length > 1) | .[0]) | join(", ")' apps.json
-PREFIX=https://raw.githubusercontent.com/cookiechain/superteam-hackathon-submissions/main/
-jq -r --arg p "$PREFIX" '.[].media | [.logo, .banner] + .screenshots | .[] | select(. != null) | select(startswith($p) | not)' apps.json
-jq -r --arg p "$PREFIX" '.[].media | [.logo, .banner] + .screenshots | .[] | select(. != null) | sub($p; "")' apps.json | xargs ls
-```
-
-Title the PR **Crumbs**.
-
-Note their README: a PR here does **not** enter you into the bounty. It is the catalogue,
-and winners get promoted from it into the permanent ecosystem registry. Do both.
+Remember their README: a PR here does **not** enter you into the bounty. It is the
+catalogue, and winners get promoted from it into the permanent ecosystem registry. Do both.
 
 ## 5. X thread, then Telegram
 
