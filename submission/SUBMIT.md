@@ -32,9 +32,9 @@ In `submission/apps.json.entry.json`:
 | `links.website` | the Vercel URL |
 | `links.github` | the GitHub repo URL |
 | `links.docs` | repo URL + `#readme` |
-| `team[0].github` | your GitHub profile |
 
-Add `links.x` and `team[0].x` if you want them; `null` is accepted.
+`team[0].github` is already filled in as https://github.com/paulandrew12. Add `links.x`
+and `team[0].x` if you want them; `null` is accepted.
 
 ## 4. PR to the submissions repo
 

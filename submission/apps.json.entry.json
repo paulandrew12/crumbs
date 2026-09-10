@@ -4,7 +4,13 @@
   "shortDescription": "The Cookie Chain positions your wallet cannot show you, and the fees they left behind.",
   "description": "Crumbs is a portfolio view for Cookie Chain. Wallets list SPL balances and stop there, so a DAMM v2 liquidity position is invisible to them: it has no owner field at all, and ownership is a bearer NFT. Fees keep accruing to positions people have already withdrawn from. Crumbs reads every token account across SPL and Token-2022, aggregates per mint in bigint, derives each DAMM v2 position from the position NFTs a wallet already holds, and surfaces the unclaimed fees on each one with a claim action that simulates before it asks for a signature. It also decodes MomoSwap launchpad curve positions, which are program-tracked shares rather than SPL tokens, resolves .cook names in both directions, and ranks holdings by value. Everything is a public read, so any address or .cook name can be inspected without connecting a wallet.",
   "category": "DeFi",
-  "tags": ["DeFi", "Portfolio", "Liquidity", "Analytics", "Tooling"],
+  "tags": [
+    "DeFi",
+    "Portfolio",
+    "Liquidity",
+    "Analytics",
+    "Tooling"
+  ],
   "links": {
     "website": "TODO_VERCEL_URL",
     "demo": null,
@@ -20,10 +26,10 @@
   },
   "team": [
     {
-      "name": "Zayn",
+      "name": "paulandrew12",
       "role": "Developer",
       "x": null,
-      "github": "TODO_GITHUB_PROFILE_URL"
+      "github": "https://github.com/paulandrew12"
     }
   ]
 }
