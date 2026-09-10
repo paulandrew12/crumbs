@@ -13,7 +13,7 @@ contract / token / application addresses.
 
 ## GitHub repository
 
-[GITHUB_URL]
+https://github.com/paulandrew12/crumbs
 
 ## Relevant addresses
 

@@ -2,14 +2,10 @@
 
 Four TODOs below need real values before anything is submitted. Everything else is done.
 
-## 1. Push the repo
+## 1. Push the repo — done
 
-```bash
-cd "crumbs"
-gh repo create crumbs --public --source=. --remote=origin --push
-```
-
-Commits already span the hackathon window, which the sponsor checks for.
+<https://github.com/paulandrew12/crumbs> — public, `main`, commits authored as
+`paulandrew12` so they link to the account.
 
 ## 2. Deploy
 
@@ -30,8 +26,6 @@ In `submission/apps.json.entry.json`:
 | Field | Value |
 | --- | --- |
 | `links.website` | the Vercel URL |
-| `links.github` | the GitHub repo URL |
-| `links.docs` | repo URL + `#readme` |
 
 `team[0].github` is already filled in as https://github.com/paulandrew12. Add `links.x`
 and `team[0].x` if you want them; `null` is accepted.

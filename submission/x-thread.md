@@ -96,7 +96,7 @@ A few dollars covers everything — fees are negligible and a program deploy is 
 **9/**
 
 Live: [VERCEL_URL]
-Source: [GITHUB_URL]
+Source: https://github.com/paulandrew12/crumbs
 
 Open source, MIT. Position and pool layouts adapted from @TheCookieChain's cookie-mcp,
 then verified against mainnet rather than trusted — Position sizes to 408 bytes and Pool
