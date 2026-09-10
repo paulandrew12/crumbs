@@ -52,9 +52,23 @@ wallet, and proves that path in a terminal instead.
 Post it, then share the link in the Cookie Chain Telegram (`t.me/TheCookieNetChain`). The
 brief lists that as the final step.
 
-## 6. Earn submission
+## 6. Earn submission — the last step, and it needs you
 
-Text in `submission/earn-submission.md`. Submit before **23 Sep 2026, 00:59 EAT**.
+<https://superteam.fun/earn/listing/create-an-app-on-cookie-chain-app>
+
+**Deadline: Wed 23 Sep 2026, 00:59 EAT** (2026-09-22 21:59 UTC). Listing confirmed OPEN,
+region Global, 1,000 USDC split as two 500s.
+
+The form has exactly three required fields. Answers ready to paste, verbatim, in
+[`earn-form-answers.txt`](earn-form-answers.txt):
+
+| Field | Answer |
+| --- | --- |
+| Live application URL | `https://crumbs-tau-nine.vercel.app` |
+| GitHub repository | `https://github.com/paulandrew12/crumbs` |
+| Relevant addresses | the block in `earn-form-answers.txt` |
+
+Both URLs re-checked and returning 200. Add the video link if you have recorded one by then.
 
 ## Still unverified
 

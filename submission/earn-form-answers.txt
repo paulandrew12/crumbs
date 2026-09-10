@@ -1,0 +1,55 @@
+SUPERTEAM EARN — "Create an App on Cookie Chain"
+Deadline: Wed 23 Sep 2026, 00:59 EAT  (2026-09-22 21:59 UTC)
+Submit at: https://superteam.fun/earn/listing/create-an-app-on-cookie-chain-app
+
+The form has exactly three required fields. Paste each block as-is.
+
+════════════════════════════════════════════════════════════════════
+FIELD 1 — Live application URL
+════════════════════════════════════════════════════════════════════
+https://crumbs-tau-nine.vercel.app
+
+════════════════════════════════════════════════════════════════════
+FIELD 2 — GitHub repository
+════════════════════════════════════════════════════════════════════
+https://github.com/paulandrew12/crumbs
+
+════════════════════════════════════════════════════════════════════
+FIELD 3 — Relevant program, contract, token, or application addresses
+════════════════════════════════════════════════════════════════════
+Crumbs deploys no program of its own. It reads and composes programs already on
+Cookie Chain, which the brief encourages. Addresses it interacts with:
+
+Cookiebox DAMM v2 (cp-amm) - DAMMjDCEFTDkt7ywazZS8GoaLtjb3HaJo3pLbf64xrPY
+  Position and Pool decoding, and the claim_position_fee instruction.
+
+MomoSwap launchpad - momoL7wu4TrXjnXMLCLzGsbx8Pm7XGgoYo7FVqDoqcw
+  UserPosition curve shares. PDAs are derived under each pool account's actual
+  owner rather than this constant, since a redeploy strands old pools.
+
+CookOven name service - H43Qtq4AMQ86y7yc3YtCKZJ2QMhhnCcHyZKeFeoQn7PA
+  .cook forward and reverse resolution.
+
+SPL Token - TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+Token-2022 - TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb
+  Balances, aggregated per mint in bigint.
+
+Associated Token Account - ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  Idempotent claim destinations. The token program is part of the ATA seed and
+  these pools pair SPL with Token-2022, so each side derives separately.
+
+Memo - MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr
+  Write-path demonstration.
+
+Endpoints: rpc.cookiescan.io, wss.cookiescan.io, api.cookiescan.io (DAS),
+api.momoswap.fun (launchpad).
+
+Also catalogued in the Cookie Chain submissions repo:
+https://github.com/cookiechain/superteam-hackathon-submissions/pull/5
+
+Note on verification: layouts were adapted from cookie-mcp (MIT, credited) then
+checked against mainnet - Position sizes to 408 bytes and Pool to 1112, exactly
+what the chain returns. scripts/simulate-claim.mjs builds a real claim and
+simulates it with sigVerify disabled: err null, both TransferChecked calls in
+the logs, reproducible with no key and no funds. A signed claim has not been
+broadcast, only simulated, and the README says so.
