@@ -7,28 +7,20 @@ Four TODOs below need real values before anything is submitted. Everything else 
 <https://github.com/paulandrew12/crumbs> — public, `main`, commits authored as
 `paulandrew12` so they link to the account.
 
-## 2. Deploy
+## 2. Deploy — done
 
-```bash
-npx vercel --prod
-```
+<https://crumbs-tau-nine.vercel.app>
 
-No environment variables are required — the defaults in `src/lib/chain.ts` point at the
-public Cookie Chain endpoints. The build is clean and the only server-side route is
-`/api/icon`.
+Public (SSO protection disabled), verified serving live chain data, and the SSRF guards on
+`/api/icon` were re-checked against the deployed instance: loopback 403, cloud metadata
+403, `file://` 400, non-image 415.
 
-Confirm the deployed URL loads and that inspecting `moon.cook` returns a portfolio.
+Redeploy after any change with `vercel deploy --prod --yes` from this directory.
 
-## 3. Fill in the four TODOs
+## 3. TODOs — done
 
-In `submission/apps.json.entry.json`:
-
-| Field | Value |
-| --- | --- |
-| `links.website` | the Vercel URL |
-
-`team[0].github` is already filled in as https://github.com/paulandrew12. Add `links.x`
-and `team[0].x` if you want them; `null` is accepted.
+Every field in `submission/apps.json.entry.json` is filled. Add `links.x` and
+`team[0].x` if you want them; `null` is accepted.
 
 ## 4. PR to the submissions repo
 

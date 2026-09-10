@@ -10,3 +10,4 @@ next-env.d.ts
 
 # scratch verification output
 /scripts/*.log
+.vercel

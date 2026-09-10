@@ -9,7 +9,7 @@ contract / token / application addresses.
 
 ## Live application URL
 
-[VERCEL_URL]
+https://crumbs-tau-nine.vercel.app
 
 ## GitHub repository
 

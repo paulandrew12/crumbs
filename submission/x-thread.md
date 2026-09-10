@@ -95,7 +95,7 @@ A few dollars covers everything — fees are negligible and a program deploy is 
 
 **9/**
 
-Live: [VERCEL_URL]
+Live: https://crumbs-tau-nine.vercel.app
 Source: https://github.com/paulandrew12/crumbs
 
 Open source, MIT. Position and pool layouts adapted from @TheCookieChain's cookie-mcp,

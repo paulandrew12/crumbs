@@ -5,8 +5,10 @@ positions your wallet cannot show you — and the fees they left behind.**
 
 ![Crumbs](brand/screenshots/01-portfolio.png)
 
+**Live: <https://crumbs-tau-nine.vercel.app>**
+
 Every read is public, so you can inspect any address or `.cook` name without connecting a
-wallet: `/?a=moon.cook`.
+wallet — try [`?a=moon.cook`](https://crumbs-tau-nine.vercel.app/?a=moon.cook).
 
 ---
 
@@ -59,7 +61,7 @@ nothing.
 | View application-specific data | [`portfolio.ts`](src/lib/portfolio.ts) |
 | Analytics / charts / dashboards | [`Allocation.tsx`](src/components/Allocation.tsx) |
 | Use existing Cookie Chain programs | no program of our own is deployed — see [addresses](submission/earn-submission.md) |
-| Deployed and publicly accessible | see `submission/SUBMIT.md` |
+| Deployed and publicly accessible | <https://crumbs-tau-nine.vercel.app> |
 | Open source + README | this repo |
 
 ---
