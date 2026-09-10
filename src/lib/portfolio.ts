@@ -138,7 +138,7 @@ export async function fetchPortfolio(
 
   // Derived from the token accounts we already have, so this costs no extra
   // account scan. A failure here must not take the whole portfolio with it.
-  const lpHoldings = await fetchLpHoldings(connection, accounts, signal).catch(
+  const lpHoldings = await fetchLpHoldings(connection, ownerKey, accounts, signal).catch(
     () => [] as LpHolding[],
   );
 

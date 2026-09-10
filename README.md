@@ -13,7 +13,7 @@ positions, staked bCOOK, and unclaimed creator fees.
 Crumbs reads all of it into one page, then adds a single write path: claim what's claimable.
 
 > **Status: Phase 3.** Token holdings, DAMM v2 liquidity positions with unclaimed fees,
-> collectibles, and launchpad curve positions — for any address. Claim actions next.
+> collectibles, launchpad curve positions, and a working claim action — for any address.
 
 ## Running it
 
@@ -145,6 +145,49 @@ the RPC, or the runtime throws, and each branch says what to do next:
 - **Simulation failed** — decodes `custom program error: 0x…` and shows the program logs
 - **Rate limited** — `rpc.cookiescan.io` is a shared community endpoint
 - **Unreachable** — network or RPC outage
+
+## Claiming fees
+
+The claim reuses the Phase 1 pipeline unchanged — `build → simulate → sign → send →
+confirm`, the same error handling, the same step rail. Only the instruction builder
+differs, which is why it was written that way.
+
+`buildClaimFeesInstructions` emits three instructions: an idempotent associated-token-account
+create for each side of the pair, then `claim_position_fee`. Idempotent matters — a claim
+usually pays into accounts the owner already has, but not always, and a plain `Create`
+would fail on the common path.
+
+Two details that are easy to get wrong:
+
+- **The token program is part of the ATA seed.** These pools pair SPL and Token-2022 mints,
+  so the destination address differs per side. The owning program is read from each mint
+  account rather than assumed.
+- **`pool_authority` is a fixed address in the IDL**, not a PDA — and it is the same
+  address that owns every pool vault on the chain. That is why it appears to hold dozens
+  of token accounts, including 21 wCOOK ones.
+
+### Verified without spending anything
+
+Simulation runs with `sigVerify: false`, so no private key and no funds are needed to
+prove the instruction is right. `scripts/simulate-claim.mjs` builds a real claim against a
+real position with pending fees and simulates it against mainnet:
+
+```
+err: null
+units consumed: 45494
+Program log: Instruction: ClaimPositionFee
+Program log: Instruction: TransferChecked   <- fee A, 805530778
+Program log: Instruction: TransferChecked   <- fee B, 310799356
+```
+
+The simulator cannot import the TypeScript module, so it restates the account list.
+Anchor validates accounts positionally, which makes order and flags the entire correctness
+story — `scripts/diff-claim.mjs` compares both across all 15 accounts and fails the check
+if they drift.
+
+**What is still untested:** the signature and broadcast. Simulation proves the program
+accepts the instruction; it cannot prove a wallet signs and the network lands it. That
+last step needs a funded wallet holding a position with fees.
 
 ## Notes on Cookie Chain
 

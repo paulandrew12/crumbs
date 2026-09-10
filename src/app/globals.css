@@ -345,3 +345,9 @@ table.holdings tr:last-child td { border-bottom: none; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .nft:hover .nft-name { color: var(--accent); }
+
+.lp-actions { display: flex; flex-direction: column; gap: 10px; }
+.lp-tx {
+  display: flex; flex-direction: column; gap: 10px;
+  padding-top: 10px; border-top: 1px solid var(--line);
+}

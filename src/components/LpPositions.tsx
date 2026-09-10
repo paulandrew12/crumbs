@@ -1,7 +1,12 @@
 "use client";
 
+import { useState } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import type { LpHolding } from "@/lib/liquidity";
-import { explorerAddress } from "@/lib/chain";
+import { buildClaimFeesInstructions } from "@/lib/claim";
+import { useTransaction } from "@/hooks/useTransaction";
+import { TxSteps } from "./TxSteps";
+import { explorerAddress, explorerTx } from "@/lib/chain";
 import { formatTokenAmount, shortAddress } from "@/lib/format";
 
 /**
@@ -12,10 +17,34 @@ import { formatTokenAmount, shortAddress } from "@/lib/format";
  * already withdrawn from. This is the part of the portfolio that is genuinely
  * lost otherwise.
  */
-export function LpPositions({ holdings }: { holdings: LpHolding[] }) {
+export function LpPositions({
+  holdings,
+  onClaimed,
+}: {
+  holdings: LpHolding[];
+  onClaimed?: () => void;
+}) {
+  const { publicKey, connected } = useWallet();
+  const { state, send, reset, busy } = useTransaction();
+  const [claiming, setClaiming] = useState<string | null>(null);
+
   if (holdings.length === 0) return null;
 
   const owed = holdings.filter((h) => h.hasUnclaimedFees).length;
+
+  // Claims only make sense on your own positions: the program requires the
+  // position-NFT holder to sign, so offering the button while inspecting
+  // someone else's wallet would just produce a rejection.
+  const isOwner = Boolean(
+    connected && publicKey && holdings.length > 0 && publicKey.toBase58() === inspectedOwner(holdings),
+  );
+
+  async function claim(holding: LpHolding) {
+    if (!publicKey) return;
+    setClaiming(holding.position.address);
+    await send(() => buildClaimFeesInstructions(holding, publicKey));
+    onClaimed?.();
+  }
 
   return (
     <section className="panel">
@@ -115,9 +144,105 @@ export function LpPositions({ holdings }: { holdings: LpHolding[] }) {
                 You withdrew this position but left the fees behind.
               </p>
             ) : null}
+
+            {h.hasUnclaimedFees && isOwner ? (
+              <div className="lp-actions">
+                <button
+                  className="action"
+                  disabled={busy}
+                  onClick={() => void claim(h)}
+                >
+                  {busy && claiming === h.position.address
+                    ? "Claiming\u2026"
+                    : "Claim fees"}
+                </button>
+
+                {claiming === h.position.address && state.phase !== "idle" ? (
+                  <div className="lp-tx">
+                    <TxSteps
+                      state={state}
+                      failedAt={state.phase === "failed" ? state.failedAt : -1}
+                    />
+
+                    {state.phase === "confirmed" ? (
+                      <div className="result ok">
+                        <h3>Fees claimed</h3>
+                        <p>
+                          Slot {state.slot.toLocaleString("en-US")} in{" "}
+                          {(state.elapsedMs / 1000).toFixed(1)}s.
+                        </p>
+                        <div className="meta" style={{ marginTop: 8 }}>
+                          <a
+                            href={explorerTx(state.signature)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {shortAddress(state.signature, 8, 8)} \u2197
+                          </a>
+                          <button
+                            className="action ghost"
+                            style={{ padding: "2px 10px", fontSize: 12 }}
+                            onClick={() => {
+                              reset();
+                              setClaiming(null);
+                            }}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {state.phase === "failed" ? (
+                      <div className="result bad">
+                        <h3>{state.error.title}</h3>
+                        <p>{state.error.detail}</p>
+                        {state.error.logs?.length ? (
+                          <details>
+                            <summary
+                              style={{
+                                cursor: "pointer",
+                                marginTop: 8,
+                                fontSize: 12.5,
+                                color: "var(--muted)",
+                              }}
+                            >
+                              Program logs
+                            </summary>
+                            <pre className="logs">
+                              {state.error.logs.join("\n")}
+                            </pre>
+                          </details>
+                        ) : null}
+                        <div className="meta" style={{ marginTop: 10 }}>
+                          <button
+                            className="action ghost"
+                            style={{ padding: "4px 12px", fontSize: 12.5 }}
+                            onClick={() => {
+                              reset();
+                              setClaiming(null);
+                            }}
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </article>
         ))}
       </div>
     </section>
   );
+}
+
+/**
+ * Whose positions these are. Every holding in a render comes from one
+ * portfolio read, so the first one's NFT account settles it.
+ */
+function inspectedOwner(holdings: LpHolding[]): string | null {
+  return holdings[0]?.ownerAddress ?? null;
 }

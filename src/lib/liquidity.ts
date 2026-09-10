@@ -44,6 +44,8 @@ const POSITION_LEN = 408;
 // Pool: pool_fees(160) then token_a_mint(32) token_b_mint(32) …
 const POOL_TOKEN_A_MINT = 168;
 const POOL_TOKEN_B_MINT = 200;
+const POOL_TOKEN_A_VAULT = 232;
+const POOL_TOKEN_B_VAULT = 264;
 const POOL_TOKEN_A_AMOUNT = 680;
 const POOL_TOKEN_B_AMOUNT = 688;
 const POOL_STATUS = 481;
@@ -72,6 +74,8 @@ export interface DammPool {
   address: string;
   tokenAMint: string;
   tokenBMint: string;
+  tokenAVault: string;
+  tokenBVault: string;
   tokenAAmount: bigint;
   tokenBAmount: bigint;
   status: number;
@@ -81,6 +85,8 @@ export interface PoolToken {
   mint: string;
   symbol: string;
   decimals: number;
+  /** SPL Token or Token-2022 — a pool may pair one of each. */
+  program: string;
 }
 
 export interface LpHolding {
@@ -88,6 +94,10 @@ export interface LpHolding {
   pool: DammPool;
   tokenA: PoolToken;
   tokenB: PoolToken;
+  /** The wallet's token account holding the position NFT — a claim account. */
+  positionNftAccount: string;
+  /** Whose portfolio this came from, so the UI knows if it can offer a claim. */
+  ownerAddress: string;
   hasLiquidity: boolean;
   /** Fees earned and never collected — the thing worth surfacing. */
   hasUnclaimedFees: boolean;
@@ -131,6 +141,12 @@ export function decodePool(address: string, data: Buffer): DammPool | null {
     tokenBMint: new PublicKey(
       data.subarray(POOL_TOKEN_B_MINT, POOL_TOKEN_B_MINT + 32),
     ).toBase58(),
+    tokenAVault: new PublicKey(
+      data.subarray(POOL_TOKEN_A_VAULT, POOL_TOKEN_A_VAULT + 32),
+    ).toBase58(),
+    tokenBVault: new PublicKey(
+      data.subarray(POOL_TOKEN_B_VAULT, POOL_TOKEN_B_VAULT + 32),
+    ).toBase58(),
     tokenAAmount: data.readBigUInt64LE(POOL_TOKEN_A_AMOUNT),
     tokenBAmount: data.readBigUInt64LE(POOL_TOKEN_B_AMOUNT),
     status: data[POOL_STATUS],
@@ -152,12 +168,22 @@ function nftCandidates(accounts: TokenAccount[]): TokenAccount[] {
   return accounts.filter((a) => a.decimals === 0 && a.amount === 1n);
 }
 
-/** Mint decimals, read on-chain because that is the authority. */
-async function fetchMintDecimals(
+export interface MintFacts {
+  decimals: number;
+  /** The token program that owns the mint — needed for ATA derivation. */
+  program: string;
+}
+
+/**
+ * Mint decimals and owning token program, read on-chain because that is the
+ * authority. The program matters: a Token-2022 mint derives a different ATA
+ * than an SPL one, and claiming into the wrong address would fail.
+ */
+async function fetchMintFacts(
   connection: Connection,
   mints: string[],
-): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
+): Promise<Map<string, MintFacts>> {
+  const out = new Map<string, MintFacts>();
   for (const batch of chunk(mints)) {
     const infos = await connection.getMultipleParsedAccounts(
       batch.map((m) => new PublicKey(m)),
@@ -167,7 +193,12 @@ async function fetchMintDecimals(
       const parsed = info?.data;
       if (parsed && "parsed" in parsed) {
         const decimals = parsed.parsed?.info?.decimals;
-        if (typeof decimals === "number") out.set(batch[i], decimals);
+        if (typeof decimals === "number") {
+          out.set(batch[i], {
+            decimals,
+            program: info!.owner.toBase58(),
+          });
+        }
       }
     });
   }
@@ -183,6 +214,7 @@ async function fetchMintDecimals(
  */
 export async function fetchLpHoldings(
   connection: Connection,
+  owner: string,
   tokenAccounts: TokenAccount[],
   signal?: AbortSignal,
 ): Promise<LpHolding[]> {
@@ -192,10 +224,12 @@ export async function fetchLpHoldings(
   // 1. Derive and read the position PDAs.
   const derived = candidates.map((a) => ({
     mint: a.mint,
+    nftAccount: a.address,
     pda: positionPda(a.mint),
   }));
 
   const positions: LpPosition[] = [];
+  const nftAccountByMint = new Map<string, string>();
   for (const batch of chunk(derived)) {
     const infos = await connection.getMultipleAccountsInfo(
       batch.map((d) => d.pda),
@@ -203,7 +237,9 @@ export async function fetchLpHoldings(
     infos.forEach((info, i) => {
       if (!info?.data) return;
       const decoded = decodePosition(batch[i].pda.toBase58(), info.data);
-      if (decoded) positions.push(decoded);
+      if (!decoded) return;
+      positions.push(decoded);
+      nftAccountByMint.set(decoded.nftMint, batch[i].nftAccount);
     });
   }
   if (positions.length === 0) return [];
@@ -229,8 +265,8 @@ export async function fetchLpHoldings(
       [...pools.values()].flatMap((p) => [p.tokenAMint, p.tokenBMint]),
     ),
   ];
-  const [decimals, assets] = await Promise.all([
-    fetchMintDecimals(connection, mints),
+  const [facts, assets] = await Promise.all([
+    fetchMintFacts(connection, mints),
     Promise.all(mints.map((m) => getAsset(m, signal))),
   ]);
   const symbols = new Map<string, string>();
@@ -245,7 +281,10 @@ export async function fetchLpHoldings(
   const token = (mint: string): PoolToken => ({
     mint,
     symbol: symbols.get(mint) ?? `${mint.slice(0, 4)}…`,
-    decimals: decimals.get(mint) ?? 0,
+    decimals: facts.get(mint)?.decimals ?? 0,
+    program:
+      facts.get(mint)?.program ??
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
   });
 
   const holdings: LpHolding[] = [];
@@ -257,6 +296,8 @@ export async function fetchLpHoldings(
       pool,
       tokenA: token(pool.tokenAMint),
       tokenB: token(pool.tokenBMint),
+      positionNftAccount: nftAccountByMint.get(position.nftMint) ?? "",
+      ownerAddress: owner,
       hasLiquidity:
         position.unlockedLiquidity > 0n ||
         position.vestedLiquidity > 0n ||

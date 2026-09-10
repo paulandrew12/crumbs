@@ -1,6 +1,6 @@
 "use client";
 
-import { TX_STEPS, type TxState } from "@/hooks/useSendMemo";
+import { TX_STEPS, type TxState } from "@/hooks/useTransaction";
 
 const LABELS: Record<(typeof TX_STEPS)[number], string> = {
   building: "Build transaction",

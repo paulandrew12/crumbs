@@ -120,7 +120,7 @@ export function PortfolioView() {
     </section>
 
     {data && data.lpHoldings.length > 0 ? (
-      <LpPositions holdings={data.lpHoldings} />
+      <LpPositions holdings={data.lpHoldings} onClaimed={refresh} />
     ) : null}
 
     {data && data.nfts.length > 0 ? <NftShelf nfts={data.nfts} /> : null}
