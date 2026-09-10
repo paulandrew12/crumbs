@@ -1,20 +1,34 @@
 # Crumbs
 
-A portfolio view for [Cookie Chain](https://www.cookiechain.wtf) that shows the positions
-your wallet cannot.
+**A portfolio view for [Cookie Chain](https://www.cookiechain.wtf) that surfaces the
+positions your wallet cannot show you — and the fees they left behind.**
 
-Cookie Chain has 22 live apps — two DEX aggregators, a launchpad, an NFT marketplace,
-three liquidity venues, liquid staking, a bridge, a name service — and no way to see what
-you hold across them. Worse, some of it is structurally invisible: the sponsor's own
-`cookie-mcp` documents that pre-graduation launchpad holdings are *"program-tracked curve
-shares, not SPL tokens — they do not appear in `get_balance`."* The same is true of LP
-positions, staked bCOOK, and unclaimed creator fees.
+![Crumbs](brand/screenshots/01-portfolio.png)
 
-Crumbs reads all of it into one page, then adds a single write path: claim what's claimable.
+Every read is public, so you can inspect any address or `.cook` name without connecting a
+wallet: `/?a=moon.cook`.
 
-> **Status: Phase 4.** Token holdings, DAMM v2 liquidity positions with unclaimed fees,
-> collectibles, launchpad curve positions, a working claim action, `.cook` name resolution
-> and a value breakdown — for any address, with no wallet required to look.
+---
+
+## The problem
+
+Cookie Chain has 22 live apps and no portfolio view. That gap is not an oversight — some
+of what a wallet holds is *structurally invisible* to it.
+
+**A Cookiebox DAMM v2 liquidity position has no owner field.** Not a hard-to-read one: the
+account does not contain one. Ownership is bearer — whoever holds the position NFT owns the
+position — so there is nothing for a wallet to query. Meanwhile fees keep accruing to
+positions people withdrew from months ago.
+
+As of 10 Sep 2026: **176 positions across 15 pools, 27 carrying unclaimed fees**, most with
+no liquidity remaining.
+
+**Launchpad buys have the same problem for a different reason.** Before a pool graduates
+your stake is a program-tracked share, not an SPL token. The sponsor's own `cookie-mcp`
+says so plainly: *"program-tracked curve shares, not SPL tokens — they do not appear in
+`get_balance`."*
+
+Crumbs reads all of it, and lets you claim what is owed.
 
 ## Running it
 
@@ -23,40 +37,44 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. No `.env.local` is needed — the defaults in
-[`src/lib/chain.ts`](src/lib/chain.ts) point at the public Cookie Chain endpoints. Copy
-`.env.local.example` if you want to override them.
+Open <http://localhost:3000>. No `.env.local` is needed — the defaults in
+[`src/lib/chain.ts`](src/lib/chain.ts) point at the public Cookie Chain endpoints; copy
+`.env.local.example` to override them.
 
-You will need [Nightly](https://nightly.app) with Cookie Chain added as a custom SVM
-network (RPC `https://rpc.cookiescan.io`), and a little COOK for fees — bridge it from
-Solana at [hyperlane.cookiescan.io](https://hyperlane.cookiescan.io).
+To claim, you need [Nightly](https://nightly.app) with Cookie Chain added as a custom SVM
+network (RPC `https://rpc.cookiescan.io`) and a little COOK for fees — bridge it from
+Solana at [hyperlane.cookiescan.io](https://hyperlane.cookiescan.io). To *look*, you need
+nothing.
 
-## What Phase 1 covers
+## Bounty requirements
 
-| Bounty requirement | Where |
+| Requirement | Where |
 | --- | --- |
-| Connect a wallet (Nightly) | [`providers.tsx`](src/app/providers.tsx), [`ConnectBar.tsx`](src/components/ConnectBar.tsx) |
-| Display connected address | [`BalancePanel.tsx`](src/components/BalancePanel.tsx) |
-| Execute transactions | [`useSendMemo.ts`](src/hooks/useSendMemo.ts) |
-| Transaction confirmation handling | `useSendMemo.ts` — blockhash-bounded `confirmTransaction` |
-| Error handling and user feedback | [`errors.ts`](src/lib/errors.ts), [`MemoDemo.tsx`](src/components/MemoDemo.tsx) |
-| View application-specific data | [`portfolio.ts`](src/lib/portfolio.ts), [`HoldingsTable.tsx`](src/components/HoldingsTable.tsx) |
-| Interact with on-chain functionality | `getTokenAccountsByOwner` across SPL and Token-2022 |
+| Connect a wallet (Nightly) | [`providers.tsx`](src/app/providers.tsx) — via Wallet Standard auto-registration |
+| Display connected address | [`PortfolioView.tsx`](src/components/PortfolioView.tsx), with `.cook` reverse resolution |
+| Execute transactions | [`useTransaction.ts`](src/hooks/useTransaction.ts) |
+| Transaction confirmation handling | blockhash-bounded `confirmTransaction`, with a live step rail |
+| Error handling and user feedback | [`errors.ts`](src/lib/errors.ts) — six classified failure modes |
+| Interact with on-chain functionality | DAMM v2, MomoSwap launchpad, CookOven names, SPL + Token-2022 |
+| View application-specific data | [`portfolio.ts`](src/lib/portfolio.ts) |
+| Analytics / charts / dashboards | [`Allocation.tsx`](src/components/Allocation.tsx) |
+| Use existing Cookie Chain programs | no program of our own is deployed — see [addresses](submission/earn-submission.md) |
+| Deployed and publicly accessible | see `submission/SUBMIT.md` |
+| Open source + README | this repo |
 
-## Reading a portfolio
+---
 
-Connecting a wallet is a convenience, not a requirement — every read is public, so you can
-paste any address in and inspect it. That also means the app demos without a funded wallet.
+## How it works
 
 ### Balances come from the chain, metadata from the indexer
 
 The Cookiescan DAS API returns balances *and* prices, so it is tempting to use it for
 everything. Measuring it first showed why that would be wrong:
 
-- **`getAssetsByOwner` returns one item per token account, not per mint.** Our test wallet
-  has 44 token accounts across 14 mints — 21 of them wCOOK alone — and DAS returns 44
-  items, many sharing an `id`. Keying that response by mint silently discards balances.
-- **`token_info.balance` is a float.** It matches the RPC exactly, but token supplies here
+- **`getAssetsByOwner` returns one item per token account, not per mint.** One test wallet
+  has 44 token accounts across 14 mints — 21 of them wCOOK alone — and DAS returns 44 items,
+  many sharing an `id`. Keying that response by mint silently discards balances.
+- **`token_info.balance` is a float.** It matches the RPC exactly, but supplies here
   routinely exceed 2^53 base units, so summing floats loses precision on exactly the
   wallets that need it most.
 - **`token_info.associated_token_address` is empty**, so a DAS item cannot be mapped back
@@ -66,112 +84,117 @@ everything. Measuring it first showed why that would be wrong:
 
 So the RPC is the source of truth for balances — raw integer amounts, aggregated per mint
 in `bigint` — and DAS is the metadata and price oracle, keyed by mint. Verified against the
-chain: the 21 wCOOK accounts sum to `13,785,827.014577584`, which is what the app displays.
+chain: those 21 wCOOK accounts sum to `13,785,827.014577584`, which is what the app shows.
 
-### Two things the indexer gets wrong, and what we do about it
+### Liquidity positions
 
-- **Zero prices.** DAS returns `price_per_token: 0` for mints it does not price, wCOOK
-  among them. Rendering that as "$0.00" would tell someone holding 13.7M wCOOK that it is
-  worthless, so a zero price is treated as *unpriced* and the row reads "—".
-- **`searchAssets` lies about NFTs.** `searchAssets` with `tokenType: "nonFungible"`
-  returns 0 across the entire chain, which looks like "this indexer has no NFTs". It is a
-  quirk of that method: `getAssetsByOwner` returns collectibles perfectly well, as
-  `interface: "V1_NFT"`. Crumbs splits those out of the token table on that field. Trusting
-  the first result would have meant building a whole redundant Metaplex read path.
-
-## Liquidity positions
-
-This is the part of a Cookie Chain portfolio that is genuinely lost otherwise.
-
-A DAMM v2 position **has no owner field**. Ownership is bearer: whoever holds the position
-NFT owns the position. So Crumbs does not scan the program — it filters the wallet's
-existing token accounts down to supply-1, zero-decimal mints and derives
-`["position", nft_mint]` for each. Discovery costs one batched read over accounts already
-fetched for the token table.
+Because a position has no owner field, Crumbs does not scan the program. It filters the
+wallet's existing token accounts down to supply-1, zero-decimal mints and derives
+`["position", nft_mint]` for each — so discovery costs one batched read over accounts
+already fetched for the token table.
 
 Layouts were computed from cookie-mcp's `cp_amm` IDL and then checked against mainnet
-rather than trusted: `Position` sizes to **408 bytes** and `Pool` to **1112**, which is
-exactly what the chain returns. Decoded fees match too — wallet `9QqQpr3N…` reports
-`fee_a_pending: 805530778` and `fee_b_pending: 310799356` on-chain, and the app renders
-0.8055 wCOOK and 310.7993 MON.
+rather than trusted: `Position` sizes to **408 bytes** and `Pool` to **1112**, exactly what
+the chain returns.
 
-**Why this matters more than the launchpad.** The original plan made launchpad curve
-shares the headline. Measuring first showed the whole MomoSwap launchpad holds **two
-pools**, both test pools created by the cookie-mcp maintainer, with zero live and zero
-graduated. DAMM v2 has **176 positions across 15 pools, 27 carrying unclaimed fees** — and
-most of those have no remaining liquidity, meaning someone withdrew and left the fees
-behind. The launchpad decoder ships anyway (it is verified and cheap, and it lights up if
-the launchpad ever fills), but it is a section, not the pitch.
+### Launchpad positions
+
+PDAs are derived under **each pool account's actual owner**, not a constant. The launchpad
+has been redeployed before, and a redeploy strands old pools on the old program id — a
+hardcoded id fails in the worst way, with the PDAs simply not existing and every wallet
+looking empty.
+
+Decoding is verified against the launchpad's own API: our on-chain decode of pool
+`FvrW6Wkn…` matches its `/position` response field for field, `shares` and both payment
+totals included.
+
+### `.cook` names
+
+Both directions are one derived read: `["domain", label]` → the owner, so the inspect box
+takes `alice.cook`; `["primary", owner]` → the name a wallet displays.
+
+This is the **CookOven** service at `H43Qtq4A…`, not the SPL Name Service at `namesLPne…`,
+which is a separate genesis program with its own unrelated accounts. CookOven holds 108
+domains and 17 primaries.
+
+Forward and reverse are independent, and the app handles that: `moon.cook` resolves to a
+wallet whose *primary* is `cooker.cook`. Clearing a primary leaves the account in place
+with an empty name, so "the account exists" is not "a primary is set".
+
+### Value breakdown
+
+Ranked bars, not a donut. On a real wallet one token is routinely 90%+ of the total, which
+makes a pie a single wedge and a stacked bar a solid block.
+
+One series, so no legend and one hue — and that hue was validated rather than eyeballed:
+the app's own `--accent` sits at lightness 0.775 and *fails* the band for a fill on a dark
+surface, while `#34A79A` passes lightness, chroma and contrast. Holdings the indexer cannot
+price are excluded and footnoted rather than counted as zero.
 
 ### Token artwork
 
-Two problems, both handled in [`/api/icon`](src/app/api/icon/route.ts):
+Two problems, both handled by [`/api/icon`](src/app/api/icon/route.ts):
 
 1. Metadata points at arbitrary IPFS gateways that serve
    `Cross-Origin-Resource-Policy: same-origin`, so the browser refuses to paint the image.
    The route re-serves it from our own origin.
-2. The art is wildly oversized — the bCOOK logo is **640 KB** for a 28px slot, and a full
+2. The art is wildly oversized — one bCOOK logo is **640 KB** for a 28px slot, and a full
    portfolio would pull roughly **9 MB** of icons. Pointing `next/image` at our own route
-   downscales server-side: 640 KB becomes **2.7 KB**, and the page's whole icon payload is
-   about 8.5 KB.
+   downscales server-side: 640 KB becomes **2.7 KB**.
 
 Because the route fetches a URL supplied by on-chain data, it is an SSRF surface. It
 enforces an http/https scheme, blocks loopback, private, link-local and `.internal` hosts,
-requires an `image/*` content type, caps the body at 2 MB, and times out at 6s. Gateways
-that miss the timeout fall back to a monogram, which is also what unindexed mints get.
+requires an `image/*` content type, caps the body at 2 MB, and times out at 6s. A monogram
+sits *behind* every image rather than replacing it on failure, so a slow gateway never
+leaves a blank circle.
+
+---
 
 ## The write path
 
-Every money-moving action in Crumbs runs the same five steps, surfaced in the UI as they
-happen:
+Every money-moving action runs the same five steps, surfaced live:
 
 ```
 build → simulate → sign → send → confirm
 ```
 
-Simulation is not optional. Cookie Chain has **no faucet, no testnet, and no devnet** —
-it is mainnet-only, so a transaction that fails costs real COOK. Simulating before asking
-for a signature means a doomed transaction costs nothing and never reaches the chain.
+Simulation is not optional. Cookie Chain has **no faucet, no testnet, and no devnet** — it
+is mainnet-only, so a failed transaction costs real COOK. Simulating before asking for a
+signature means a doomed transaction costs nothing and never reaches the chain.
 
-Phase 3 reuses this pipeline unchanged; only the instruction builder differs.
+`explainError()` in [`errors.ts`](src/lib/errors.ts) classifies what the wallet, RPC or
+runtime throws, and each branch says what to do next: declined, expired (blocks are ~1s
+here, so blockhashes age fast), not enough COOK, simulation failed with
+`custom program error: 0x…` decoded and logs shown, rate limited, unreachable.
 
-### Failure modes handled
+### Claiming fees
 
-`explainError()` in [`src/lib/errors.ts`](src/lib/errors.ts) classifies what the wallet,
-the RPC, or the runtime throws, and each branch says what to do next:
+`buildClaimFeesInstructions` emits an idempotent ATA create for each side of the pair, then
+`claim_position_fee`. Idempotent matters — a claim usually pays into accounts the owner
+already has, but not always, and a plain `Create` would fail on the common path.
 
-- **Declined** — the popup was dismissed; nothing was sent
-- **Expired** — Cookie Chain produces ~1s blocks, so blockhashes age out quickly
-- **Not enough COOK** — with a pointer to the bridge
-- **Simulation failed** — decodes `custom program error: 0x…` and shows the program logs
-- **Rate limited** — `rpc.cookiescan.io` is a shared community endpoint
-- **Unreachable** — network or RPC outage
-
-## Claiming fees
-
-The claim reuses the Phase 1 pipeline unchanged — `build → simulate → sign → send →
-confirm`, the same error handling, the same step rail. Only the instruction builder
-differs, which is why it was written that way.
-
-`buildClaimFeesInstructions` emits three instructions: an idempotent associated-token-account
-create for each side of the pair, then `claim_position_fee`. Idempotent matters — a claim
-usually pays into accounts the owner already has, but not always, and a plain `Create`
-would fail on the common path.
-
-Two details that are easy to get wrong:
+Two things that are easy to get wrong:
 
 - **The token program is part of the ATA seed.** These pools pair SPL and Token-2022 mints,
-  so the destination address differs per side. The owning program is read from each mint
-  account rather than assumed.
-- **`pool_authority` is a fixed address in the IDL**, not a PDA — and it is the same
-  address that owns every pool vault on the chain. That is why it appears to hold dozens
-  of token accounts, including 21 wCOOK ones.
+  so each side derives a different destination. The owning program is read from each mint
+  rather than assumed.
+- **`pool_authority` is a fixed address in the IDL, not a PDA** — and it is the same
+  address that owns every pool vault on the chain, which is why it appears to hold dozens
+  of token accounts.
 
-### Verified without spending anything
+## What is verified, and how
 
-Simulation runs with `sigVerify: false`, so no private key and no funds are needed to
-prove the instruction is right. `scripts/simulate-claim.mjs` builds a real claim against a
-real position with pending fees and simulates it against mainnet:
+Simulation runs with `sigVerify: false`, so no key and no funds are needed to prove an
+instruction is right. Reproduce any of this yourself:
+
+```bash
+node scripts/simulate-claim.mjs     # builds a real claim, simulates it against mainnet
+node scripts/diff-claim.mjs         # shipped builder vs simulated instruction, 15 accounts
+node scripts/verify-launchpad.mjs   # on-chain decode vs the launchpad API
+node scripts/probe-damm.mjs         # census of positions, pools and unclaimed fees
+```
+
+`simulate-claim.mjs` output against a real position with pending fees:
 
 ```
 err: null
@@ -181,63 +204,42 @@ Program log: Instruction: TransferChecked   <- fee A, 805530778
 Program log: Instruction: TransferChecked   <- fee B, 310799356
 ```
 
-The simulator cannot import the TypeScript module, so it restates the account list.
-Anchor validates accounts positionally, which makes order and flags the entire correctness
-story — `scripts/diff-claim.mjs` compares both across all 15 accounts and fails the check
-if they drift.
+The simulator restates the account list because it cannot import the TypeScript module.
+Anchor validates accounts positionally, which makes order and flags the whole correctness
+story, so `diff-claim.mjs` compares both across all 15 accounts and fails on drift.
 
-**What is still untested:** the signature and broadcast. Simulation proves the program
-accepts the instruction; it cannot prove a wallet signs and the network lands it. That
-last step needs a funded wallet holding a position with fees.
+**Not verified: a real signature and broadcast of a claim.** Simulation proves the program
+accepts the instruction; it cannot prove a wallet signs and the network lands it.
 
-## `.cook` names
+## Known limits
 
-Both directions are one derived read, so resolution is cheap enough to do inline:
-
-- forward, `["domain", label]` → the owner, so the inspect box takes `alice.cook`
-- reverse, `["primary", owner]` → the name a wallet chose to display
-
-This is the **CookOven** name service at `H43Qtq4A…`, not the SPL Name Service at
-`namesLPne…` — a separate genesis program with its own unrelated accounts. CookOven holds
-108 domains and 17 primaries (10 Sep 2026).
-
-Forward and reverse are genuinely independent, and the app handles that: `moon.cook`
-resolves to a wallet whose *primary* name is `cooker.cook`. Clearing a primary leaves the
-account in place with an empty name, so "the account exists" is not the same as "a primary
-is set" — an empty name decodes to null rather than an empty string.
-
-## Value breakdown
-
-Ranked bars, not a donut. On a real wallet one token is routinely 90%+ of the total, which
-makes a pie a single wedge and a stacked bar a solid block; ranked bars keep both the
-magnitude and the long tail readable. One series, so there is no legend and one hue.
-
-That hue is `#34A79A`, chosen by running the palette against the chart surface rather than
-by eye — the app's `--accent` sits at lightness 0.775 and fails the band for a fill on a
-dark surface, while `#34A79A` passes lightness, chroma and contrast. Bars carry 4px rounded
-data-ends, values use tabular figures, and the holdings table above is the table view of
-the same numbers.
-
-Holdings the indexer cannot price are left out of the chart and counted in a footnote,
-rather than folded in as zero.
+- The public RPC retains roughly **25 days** of history (first available block 22,138,261
+  against slot 24.3M), so there is no portfolio-over-time chart. Current state only, and
+  the alternative would be a stub that falls over under questioning.
+- Unpriced holdings are excluded from the breakdown and footnoted. wCOOK is one: DAS
+  returns `price_per_token: 0` for it, and rendering that as "$0.00" would tell someone
+  holding 13.7M wCOOK it is worthless.
+- Liquid-staked COOK appears as an ordinary token holding; there is no separate staking view.
+- `searchAssets` with `tokenType: "nonFungible"` returns 0 chain-wide, which looks like
+  "this indexer has no NFTs". It is a quirk of that method — `getAssetsByOwner` returns
+  them as `V1_NFT`, which is what Crumbs uses.
 
 ## Notes on Cookie Chain
 
-- It is an **SVM L1 with its own genesis** (`9wDaBRDgArEUpvhHxGguNkwozsZh4UpGZB9o2EoEcBB2`),
+- An **SVM L1 with its own genesis** (`9wDaBRDgArEUpvhHxGguNkwozsZh4UpGZB9o2EoEcBB2`)
   running `solana-core` 4.1.2 — Solana-compatible tooling, different chain.
 - **COOK** is the native fee token, 9 decimals, lamports-style precision.
-- Standard programs sit at their canonical Solana addresses; they were embedded at genesis.
-  See [`src/lib/chain.ts`](src/lib/chain.ts).
+- Standard programs sit at their canonical Solana addresses, embedded at genesis. See
+  [`chain.ts`](src/lib/chain.ts).
 - The docs list the websocket as `https://wss.cookiescan.io`; web3.js needs a `wss://`
   scheme, so `chain.ts` normalises it.
-- The public RPC only retains about **25 days** of history (first available block
-  22,138,261 against slot 24.3M). Crumbs is built around current state, not history —
-  a "portfolio over time" chart is not honestly possible on this endpoint.
 
 ## Credits
 
-Account decoding for launchpad and LP positions (Phase 2) adapts
-[`cookiechain/cookie-mcp`](https://github.com/cookiechain/cookie-mcp), MIT licensed.
+Account layouts and PDA seeds for the launchpad, cp-amm and CookOven names were adapted
+from [`cookiechain/cookie-mcp`](https://github.com/cookiechain/cookie-mcp) (MIT), then
+verified independently against mainnet. Its notes on the launchpad redeploy and on the
+stale committed IDL saved real time and are worth reading.
 
 ## Licence
 

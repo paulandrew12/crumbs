@@ -28,11 +28,39 @@ export function PortfolioView() {
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
 
-  // A freshly connected wallet takes focus, unless you are inspecting
-  // something else on purpose.
+  // A portfolio is a public read, so it deserves a shareable URL. `?a=` takes
+  // an address or a `.cook` name.
   useEffect(() => {
-    if (connected && publicKey) setSubject(publicKey.toBase58());
+    const initial = new URLSearchParams(window.location.search).get("a");
+    if (!initial) return;
+    setManual(initial);
+    if (looksLikeName(initial)) {
+      void resolveName(connection, initial).then((owner) => {
+        if (owner) setSubject(owner);
+        else setLookupError(`${normalizeLabel(initial)}.cook is not registered.`);
+      });
+      return;
+    }
+    setSubject(initial);
+    // Only on first mount: later changes come from the form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A freshly connected wallet takes focus, unless a link already named
+  // someone else to look at.
+  useEffect(() => {
+    if (!connected || !publicKey) return;
+    if (new URLSearchParams(window.location.search).get("a")) return;
+    setSubject(publicKey.toBase58());
   }, [connected, publicKey]);
+
+  // Keep the URL in step so the page can be linked and reloaded.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (subject) url.searchParams.set("a", subject);
+    else url.searchParams.delete("a");
+    window.history.replaceState(null, "", url);
+  }, [subject]);
 
   const { data, loading, error, refresh } = usePortfolio(subject);
 

@@ -18,29 +18,32 @@ function TokenIcon({ holding }: { holding: Holding }) {
     .slice(0, 3)
     .toUpperCase();
 
-  if (!holding.image || broken) {
-    return <span className="icon fallback">{initials || "?"}</span>;
-  }
-  // Two problems with token art, both solved here.
+  // The monogram is always rendered, and the image sits on top of it. Token
+  // art comes from IPFS gateways that routinely take seconds or time out, and
+  // an empty circle for those seconds reads as broken — this way the slot is
+  // never blank, and a failed load simply leaves the monogram showing.
   //
-  // 1. It lives on arbitrary IPFS gateways that serve a restrictive
-  //    Cross-Origin-Resource-Policy, so the browser refuses to paint it.
-  //    /api/icon re-serves it from our own origin.
-  // 2. It is wildly oversized — one bCOOK logo is 640 KB for a 28px slot, and
-  //    a full portfolio would pull ~9 MB of icons. Pointing next/image at our
-  //    own route downscales server-side. A same-origin path needs no
-  //    remotePatterns allowlist, which an arbitrary metadata URI could never
-  //    satisfy anyway.
+  // Two problems with the art itself, both handled by /api/icon:
+  // the gateways serve a restrictive Cross-Origin-Resource-Policy so the
+  // browser refuses to paint them directly, and they are wildly oversized —
+  // one bCOOK logo is 640 KB for a 28px slot. Pointing next/image at our own
+  // route fixes both: 640 KB becomes 2.7 KB.
   return (
-    <Image
-      className="icon"
-      src={`/api/icon?url=${encodeURIComponent(holding.image)}`}
-      alt=""
-      width={28}
-      height={28}
-      unoptimized={false}
-      onError={() => setBroken(true)}
-    />
+    <span className="icon-slot">
+      <span className="icon-monogram" aria-hidden="true">
+        {initials || "?"}
+      </span>
+      {holding.image && !broken ? (
+        <Image
+          className="icon-art"
+          src={`/api/icon?url=${encodeURIComponent(holding.image)}`}
+          alt=""
+          width={28}
+          height={28}
+          onError={() => setBroken(true)}
+        />
+      ) : null}
+    </span>
   );
 }
 

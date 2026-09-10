@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Crumbs. A cookie with a bite out of it, and what fell off.
+       The crumbs are the point: value a wallet drops and never notices.
+
+       The bite is an opaque overlay in the ground colour rather than an SVG
+       mask - several renderers (ImageMagick's built-in parser among them) drop
+       masked shapes entirely, and the ground here is solid, so the result is
+       identical and portable.
+
+       Crumb spacing is deliberate: each sits clear of the cookie's edge and of
+       its neighbour, so at 32px they still read as separate marks instead of
+       fusing into a tail. -->
+  <rect width="512" height="512" fill="#0D1310"/>
+
+  <circle cx="218" cy="244" r="138" fill="#34A79A"/>
+  <circle cx="322" cy="148" r="70" fill="#0D1310"/>
+
+  <circle cx="352" cy="362" r="24" fill="#34A79A"/>
+  <circle cx="400" cy="404" r="15" fill="#34A79A"/>
+  <circle cx="435" cy="437" r="9"  fill="#34A79A"/>
+</svg>

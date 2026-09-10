@@ -7,18 +7,24 @@ import { explorerAddress } from "@/lib/chain";
 
 function Thumb({ nft }: { nft: Holding }) {
   const [broken, setBroken] = useState(false);
-  if (!nft.image || broken) {
-    return <div className="nft-thumb nft-thumb-empty">no art</div>;
-  }
+  // Same reasoning as the token icons: a placeholder underneath, never a
+  // blank square while an IPFS gateway takes its time.
   return (
-    <Image
-      className="nft-thumb"
-      src={`/api/icon?url=${encodeURIComponent(nft.image)}`}
-      alt=""
-      width={96}
-      height={96}
-      onError={() => setBroken(true)}
-    />
+    <span className="nft-slot">
+      <span className="nft-thumb-empty" aria-hidden="true">
+        no art
+      </span>
+      {nft.image && !broken ? (
+        <Image
+          className="nft-art"
+          src={`/api/icon?url=${encodeURIComponent(nft.image)}`}
+          alt=""
+          width={96}
+          height={96}
+          onError={() => setBroken(true)}
+        />
+      ) : null}
+    </span>
   );
 }
 
