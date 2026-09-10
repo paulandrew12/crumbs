@@ -12,8 +12,9 @@ positions, staked bCOOK, and unclaimed creator fees.
 
 Crumbs reads all of it into one page, then adds a single write path: claim what's claimable.
 
-> **Status: Phase 3.** Token holdings, DAMM v2 liquidity positions with unclaimed fees,
-> collectibles, launchpad curve positions, and a working claim action — for any address.
+> **Status: Phase 4.** Token holdings, DAMM v2 liquidity positions with unclaimed fees,
+> collectibles, launchpad curve positions, a working claim action, `.cook` name resolution
+> and a value breakdown — for any address, with no wallet required to look.
 
 ## Running it
 
@@ -188,6 +189,37 @@ if they drift.
 **What is still untested:** the signature and broadcast. Simulation proves the program
 accepts the instruction; it cannot prove a wallet signs and the network lands it. That
 last step needs a funded wallet holding a position with fees.
+
+## `.cook` names
+
+Both directions are one derived read, so resolution is cheap enough to do inline:
+
+- forward, `["domain", label]` → the owner, so the inspect box takes `alice.cook`
+- reverse, `["primary", owner]` → the name a wallet chose to display
+
+This is the **CookOven** name service at `H43Qtq4A…`, not the SPL Name Service at
+`namesLPne…` — a separate genesis program with its own unrelated accounts. CookOven holds
+108 domains and 17 primaries (10 Sep 2026).
+
+Forward and reverse are genuinely independent, and the app handles that: `moon.cook`
+resolves to a wallet whose *primary* name is `cooker.cook`. Clearing a primary leaves the
+account in place with an empty name, so "the account exists" is not the same as "a primary
+is set" — an empty name decodes to null rather than an empty string.
+
+## Value breakdown
+
+Ranked bars, not a donut. On a real wallet one token is routinely 90%+ of the total, which
+makes a pie a single wedge and a stacked bar a solid block; ranked bars keep both the
+magnitude and the long tail readable. One series, so there is no legend and one hue.
+
+That hue is `#34A79A`, chosen by running the palette against the chart surface rather than
+by eye — the app's `--accent` sits at lightness 0.775 and fails the band for a fill on a
+dark surface, while `#34A79A` passes lightness, chroma and contrast. Bars carry 4px rounded
+data-ends, values use tabular figures, and the holdings table above is the table view of
+the same numbers.
+
+Holdings the indexer cannot price are left out of the chart and counted in a footnote,
+rather than folded in as zero.
 
 ## Notes on Cookie Chain
 

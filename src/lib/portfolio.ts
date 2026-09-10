@@ -2,6 +2,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { PROGRAMS } from "./chain";
 import { getAssetsByOwner, indexByMint, type DasAsset } from "./das";
 import { fetchLpHoldings, type LpHolding } from "./liquidity";
+import { reverseName } from "./names";
 
 /** One SPL / Token-2022 account, exactly as the chain reports it. */
 export interface TokenAccount {
@@ -42,6 +43,8 @@ export interface Portfolio {
   lpHoldings: LpHolding[];
   /** Collectibles, split out of `holdings` so the token table stays a token table. */
   nfts: Holding[];
+  /** The `.cook` name this wallet chose to be known by, if any. */
+  primaryName: string | null;
 }
 
 /**
@@ -129,11 +132,12 @@ export async function fetchPortfolio(
 ): Promise<Portfolio> {
   const ownerKey = owner.toBase58();
 
-  const [nativeLamports, accounts, assets] = await Promise.all([
+  const [nativeLamports, accounts, assets, primaryName] = await Promise.all([
     connection.getBalance(owner, "confirmed").catch(() => 0),
     fetchTokenAccounts(connection, owner),
     // The indexer is a nice-to-have: if it is down we still show balances.
     getAssetsByOwner(ownerKey, signal).catch(() => [] as DasAsset[]),
+    reverseName(connection, owner).catch(() => null),
   ]);
 
   // Derived from the token accounts we already have, so this costs no extra
@@ -223,5 +227,6 @@ export async function fetchPortfolio(
     unindexedMints,
     lpHoldings,
     nfts,
+    primaryName,
   };
 }
