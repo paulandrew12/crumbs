@@ -56,6 +56,10 @@ and winners get promoted from it into the permanent ecosystem registry. Do both.
 Draft in `submission/x-thread.md`. The brief asks the thread to explain the app, show how
 to use it, and point at the Cookie Chain Bridge — all three are in the draft.
 
+Shot-by-shot video script in `submission/video-script.md`, including a 60-second cut for
+the thread. It is built around the fact that you cannot demo a claim without a funded
+wallet, and proves that path in a terminal instead.
+
 Post it, then share the link in the Cookie Chain Telegram (`t.me/TheCookieNetChain`). The
 brief lists that as the final step.
 
