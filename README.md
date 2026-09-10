@@ -12,8 +12,8 @@ positions, staked bCOOK, and unclaimed creator fees.
 
 Crumbs reads all of it into one page, then adds a single write path: claim what's claimable.
 
-> **Status: Phase 1.** Wallet connection, native balance, and a proven end-to-end write
-> path. The portfolio reads land in Phase 2 and claims in Phase 3.
+> **Status: Phase 2.** Token holdings across both token programs, with metadata, prices
+> and USD values, for any address. Claims land in Phase 3.
 
 ## Running it
 
@@ -39,6 +39,59 @@ Solana at [hyperlane.cookiescan.io](https://hyperlane.cookiescan.io).
 | Execute transactions | [`useSendMemo.ts`](src/hooks/useSendMemo.ts) |
 | Transaction confirmation handling | `useSendMemo.ts` — blockhash-bounded `confirmTransaction` |
 | Error handling and user feedback | [`errors.ts`](src/lib/errors.ts), [`MemoDemo.tsx`](src/components/MemoDemo.tsx) |
+| View application-specific data | [`portfolio.ts`](src/lib/portfolio.ts), [`HoldingsTable.tsx`](src/components/HoldingsTable.tsx) |
+| Interact with on-chain functionality | `getTokenAccountsByOwner` across SPL and Token-2022 |
+
+## Reading a portfolio
+
+Connecting a wallet is a convenience, not a requirement — every read is public, so you can
+paste any address in and inspect it. That also means the app demos without a funded wallet.
+
+### Balances come from the chain, metadata from the indexer
+
+The Cookiescan DAS API returns balances *and* prices, so it is tempting to use it for
+everything. Measuring it first showed why that would be wrong:
+
+- **`getAssetsByOwner` returns one item per token account, not per mint.** Our test wallet
+  has 44 token accounts across 14 mints — 21 of them wCOOK alone — and DAS returns 44
+  items, many sharing an `id`. Keying that response by mint silently discards balances.
+- **`token_info.balance` is a float.** It matches the RPC exactly, but token supplies here
+  routinely exceed 2^53 base units, so summing floats loses precision on exactly the
+  wallets that need it most.
+- **`token_info.associated_token_address` is empty**, so a DAS item cannot be mapped back
+  to the account it came from.
+- **`showNativeBalance` is accepted but returns null.** Native COOK comes from
+  `connection.getBalance`.
+
+So the RPC is the source of truth for balances — raw integer amounts, aggregated per mint
+in `bigint` — and DAS is the metadata and price oracle, keyed by mint. Verified against the
+chain: the 21 wCOOK accounts sum to `13,785,827.014577584`, which is what the app displays.
+
+### Two things the indexer gets wrong, and what we do about it
+
+- **Zero prices.** DAS returns `price_per_token: 0` for mints it does not price, wCOOK
+  among them. Rendering that as "$0.00" would tell someone holding 13.7M wCOOK that it is
+  worthless, so a zero price is treated as *unpriced* and the row reads "—".
+- **No NFTs.** `searchAssets` with `tokenType: "nonFungible"` returns 0 across the entire
+  chain, so this indexer covers fungibles only. NFT holdings will need Baked Bazaar or
+  direct Metaplex reads — deferred, not forgotten.
+
+### Token artwork
+
+Two problems, both handled in [`/api/icon`](src/app/api/icon/route.ts):
+
+1. Metadata points at arbitrary IPFS gateways that serve
+   `Cross-Origin-Resource-Policy: same-origin`, so the browser refuses to paint the image.
+   The route re-serves it from our own origin.
+2. The art is wildly oversized — the bCOOK logo is **640 KB** for a 28px slot, and a full
+   portfolio would pull roughly **9 MB** of icons. Pointing `next/image` at our own route
+   downscales server-side: 640 KB becomes **2.7 KB**, and the page's whole icon payload is
+   about 8.5 KB.
+
+Because the route fetches a URL supplied by on-chain data, it is an SSRF surface. It
+enforces an http/https scheme, blocks loopback, private, link-local and `.internal` hosts,
+requires an `image/*` content type, caps the body at 2 MB, and times out at 6s. Gateways
+that miss the timeout fall back to a monogram, which is also what unindexed mints get.
 
 ## The write path
 
