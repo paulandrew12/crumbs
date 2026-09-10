@@ -1,0 +1,181 @@
+:root {
+  --ground: #0d1310;
+  --surface: #151e1a;
+  --raised: #1b2621;
+  --line: #2a3833;
+  --ink: #e2e9e5;
+  --muted: #96a69e;
+  --accent: #4ecdc0;
+  --accent-ink: #0d1310;
+  --danger: #e8806b;
+  --warn: #e0904d;
+  --good: #5fbe84;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-underline-offset: 3px; }
+
+.shell {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.masthead { display: flex; flex-direction: column; gap: 10px; }
+.masthead h1 { margin: 0; font-size: 34px; letter-spacing: -0.03em; }
+.masthead p { margin: 0; color: var(--muted); max-width: 56ch; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 13px;
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+.balance {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.balance span { font-size: 15px; color: var(--muted); margin-left: 6px; }
+
+.addr {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+button.action {
+  font: inherit;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 5px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+}
+button.action:disabled { opacity: 0.5; cursor: not-allowed; }
+button.ghost { background: transparent; color: var(--accent); }
+
+input.note {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 14px;
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--ink);
+}
+input.note:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* transaction step rail */
+.steps { display: flex; flex-direction: column; gap: 2px; }
+.step {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  padding: 3px 0;
+}
+.step .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--line); flex: 0 0 auto;
+}
+.step.done { color: var(--ink); }
+.step.done .dot { background: var(--good); }
+.step.active { color: var(--accent); }
+.step.active .dot { background: var(--accent); animation: pulse 1.1s ease-in-out infinite; }
+.step.failed { color: var(--danger); }
+.step.failed .dot { background: var(--danger); }
+
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }
+@media (prefers-reduced-motion: reduce) { .step.active .dot { animation: none } }
+
+.result {
+  border-radius: 5px;
+  padding: 14px 16px;
+  font-size: 14.5px;
+  border: 1px solid var(--line);
+  background: var(--raised);
+}
+.result.ok { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
+.result.bad { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+.result h3 { margin: 0 0 4px; font-size: 15px; }
+.result.ok h3 { color: var(--good); }
+.result.bad h3 { color: var(--danger); }
+.result p { margin: 0; color: var(--muted); }
+
+pre.logs {
+  margin: 12px 0 0;
+  padding: 12px;
+  background: var(--ground);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  overflow-x: auto;
+  color: var(--muted);
+}
+
+.meta {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+footer.foot {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
