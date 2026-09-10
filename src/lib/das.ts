@@ -139,3 +139,19 @@ export function indexByMint(assets: DasAsset[]): Map<string, DasAsset> {
   }
   return byMint;
 }
+
+/**
+ * One asset by mint. There is no `getAssetBatch` on this indexer (checked
+ * 10 Sep 2026: "Method not found"), so callers must bound how many they ask
+ * for — a pool pair is two, a portfolio's worth of pools is a handful.
+ */
+export async function getAsset(
+  mint: string,
+  signal?: AbortSignal,
+): Promise<DasAsset | null> {
+  try {
+    return await dasRequest<DasAsset>("getAsset", { id: mint }, signal);
+  } catch {
+    return null;
+  }
+}

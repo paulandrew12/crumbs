@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <main className="shell">
       <header className="masthead">
-        <span className="eyebrow">Cookie Chain · Phase 2</span>
+        <span className="eyebrow">Cookie Chain · Phase 3</span>
         <h1>Crumbs</h1>
         <p>
           A portfolio view for Cookie Chain that surfaces the positions your

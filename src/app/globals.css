@@ -286,3 +286,62 @@ table.holdings tr:last-child td { border-bottom: none; }
 .delta.down { color: var(--danger); }
 
 .footnote { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+/* ---- liquidity positions ---- */
+.badge-owed {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 3px 9px; border-radius: 3px;
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line));
+  color: var(--warn);
+}
+.lp-list { display: flex; flex-direction: column; gap: 10px; }
+.lp {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 4px;
+  background: var(--raised);
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.lp-owed { border-left-color: var(--warn); }
+.lp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lp-pair { font-size: 15.5px; font-weight: 600; }
+.lp-link { font-family: var(--mono); font-size: 11px; }
+
+.lp-facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px; margin: 0;
+}
+.lp-facts > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lp-facts dt {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.11em;
+  text-transform: uppercase; color: var(--muted);
+}
+.lp-facts dd {
+  margin: 0; font-family: var(--mono); font-size: 13px;
+  display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center;
+}
+.lp-facts dd.owed { color: var(--warn); }
+.lp-note { margin: 0; font-size: 12.5px; color: var(--warn); }
+
+/* ---- collectibles ---- */
+.nft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 14px;
+}
+.nft { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--ink); min-width: 0; }
+.nft-thumb {
+  width: 100%; aspect-ratio: 1; border-radius: 5px; object-fit: cover;
+  background: var(--raised); border: 1px solid var(--line); height: auto;
+}
+.nft-thumb-empty {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+}
+.nft-name {
+  font-size: 12px; line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nft:hover .nft-name { color: var(--accent); }

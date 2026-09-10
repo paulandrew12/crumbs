@@ -5,6 +5,8 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { SummaryTiles } from "./SummaryTiles";
 import { HoldingsTable } from "./HoldingsTable";
+import { LpPositions } from "./LpPositions";
+import { NftShelf } from "./NftShelf";
 import { explorerAddress } from "@/lib/chain";
 import { shortAddress } from "@/lib/format";
 
@@ -39,6 +41,7 @@ export function PortfolioView() {
   }
 
   return (
+    <>
     <section className="panel">
       <div className="row">
         <h2>Holdings</h2>
@@ -115,5 +118,12 @@ export function PortfolioView() {
         </>
       )}
     </section>
+
+    {data && data.lpHoldings.length > 0 ? (
+      <LpPositions holdings={data.lpHoldings} />
+    ) : null}
+
+    {data && data.nfts.length > 0 ? <NftShelf nfts={data.nfts} /> : null}
+    </>
   );
 }

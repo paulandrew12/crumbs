@@ -1,6 +1,7 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { PROGRAMS } from "./chain";
 import { getAssetsByOwner, indexByMint, type DasAsset } from "./das";
+import { fetchLpHoldings, type LpHolding } from "./liquidity";
 
 /** One SPL / Token-2022 account, exactly as the chain reports it. */
 export interface TokenAccount {
@@ -26,6 +27,8 @@ export interface Holding {
   valueUsd?: number;
   priceChange24h?: number;
   isToken2022: boolean;
+  /** The indexer's interface string, e.g. FungibleToken or V1_NFT. */
+  kind: string;
 }
 
 export interface Portfolio {
@@ -35,6 +38,10 @@ export interface Portfolio {
   totalValueUsd: number;
   /** True when the indexer had nothing for a mint we hold. */
   unindexedMints: string[];
+  /** DAMM v2 liquidity positions — invisible to every wallet on this chain. */
+  lpHoldings: LpHolding[];
+  /** Collectibles, split out of `holdings` so the token table stays a token table. */
+  nfts: Holding[];
 }
 
 /**
@@ -129,6 +136,12 @@ export async function fetchPortfolio(
     getAssetsByOwner(ownerKey, signal).catch(() => [] as DasAsset[]),
   ]);
 
+  // Derived from the token accounts we already have, so this costs no extra
+  // account scan. A failure here must not take the whole portfolio with it.
+  const lpHoldings = await fetchLpHoldings(connection, accounts, signal).catch(
+    () => [] as LpHolding[],
+  );
+
   const meta = indexByMint(assets);
 
   const byMint = new Map<string, { amount: bigint; decimals: number; accounts: number; programId: string }>();
@@ -174,8 +187,23 @@ export async function fetchPortfolio(
       valueUsd,
       priceChange24h: asset?.price_change_24h,
       isToken2022: agg.programId === PROGRAMS.token2022.toBase58(),
+      kind: asset?.interface ?? "Unknown",
     });
   }
+
+  // A DAMM position NFT is the bearer token for a liquidity position, not a
+  // holding in its own right. It is rendered properly in the liquidity
+  // section, so showing it here too would be double counting.
+  const positionNfts = new Set(lpHoldings.map((h) => h.position.nftMint));
+
+  const nfts = holdings.filter(
+    (h) => h.kind === "V1_NFT" && !positionNfts.has(h.mint),
+  );
+  const fungible = holdings.filter(
+    (h) => h.kind !== "V1_NFT" && !positionNfts.has(h.mint),
+  );
+  holdings.length = 0;
+  holdings.push(...fungible);
 
   // Priced holdings first, by value; then unpriced, by raw size.
   holdings.sort((a, b) => {
@@ -187,5 +215,13 @@ export async function fetchPortfolio(
 
   const totalValueUsd = holdings.reduce((sum, h) => sum + (h.valueUsd ?? 0), 0);
 
-  return { owner: ownerKey, nativeLamports, holdings, totalValueUsd, unindexedMints };
+  return {
+    owner: ownerKey,
+    nativeLamports,
+    holdings,
+    totalValueUsd,
+    unindexedMints,
+    lpHoldings,
+    nfts,
+  };
 }

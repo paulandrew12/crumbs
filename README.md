@@ -12,8 +12,8 @@ positions, staked bCOOK, and unclaimed creator fees.
 
 Crumbs reads all of it into one page, then adds a single write path: claim what's claimable.
 
-> **Status: Phase 2.** Token holdings across both token programs, with metadata, prices
-> and USD values, for any address. Claims land in Phase 3.
+> **Status: Phase 3.** Token holdings, DAMM v2 liquidity positions with unclaimed fees,
+> collectibles, and launchpad curve positions — for any address. Claim actions next.
 
 ## Running it
 
@@ -72,9 +72,35 @@ chain: the 21 wCOOK accounts sum to `13,785,827.014577584`, which is what the ap
 - **Zero prices.** DAS returns `price_per_token: 0` for mints it does not price, wCOOK
   among them. Rendering that as "$0.00" would tell someone holding 13.7M wCOOK that it is
   worthless, so a zero price is treated as *unpriced* and the row reads "—".
-- **No NFTs.** `searchAssets` with `tokenType: "nonFungible"` returns 0 across the entire
-  chain, so this indexer covers fungibles only. NFT holdings will need Baked Bazaar or
-  direct Metaplex reads — deferred, not forgotten.
+- **`searchAssets` lies about NFTs.** `searchAssets` with `tokenType: "nonFungible"`
+  returns 0 across the entire chain, which looks like "this indexer has no NFTs". It is a
+  quirk of that method: `getAssetsByOwner` returns collectibles perfectly well, as
+  `interface: "V1_NFT"`. Crumbs splits those out of the token table on that field. Trusting
+  the first result would have meant building a whole redundant Metaplex read path.
+
+## Liquidity positions
+
+This is the part of a Cookie Chain portfolio that is genuinely lost otherwise.
+
+A DAMM v2 position **has no owner field**. Ownership is bearer: whoever holds the position
+NFT owns the position. So Crumbs does not scan the program — it filters the wallet's
+existing token accounts down to supply-1, zero-decimal mints and derives
+`["position", nft_mint]` for each. Discovery costs one batched read over accounts already
+fetched for the token table.
+
+Layouts were computed from cookie-mcp's `cp_amm` IDL and then checked against mainnet
+rather than trusted: `Position` sizes to **408 bytes** and `Pool` to **1112**, which is
+exactly what the chain returns. Decoded fees match too — wallet `9QqQpr3N…` reports
+`fee_a_pending: 805530778` and `fee_b_pending: 310799356` on-chain, and the app renders
+0.8055 wCOOK and 310.7993 MON.
+
+**Why this matters more than the launchpad.** The original plan made launchpad curve
+shares the headline. Measuring first showed the whole MomoSwap launchpad holds **two
+pools**, both test pools created by the cookie-mcp maintainer, with zero live and zero
+graduated. DAMM v2 has **176 positions across 15 pools, 27 carrying unclaimed fees** — and
+most of those have no remaining liquidity, meaning someone withdrew and left the fees
+behind. The launchpad decoder ships anyway (it is verified and cheap, and it lights up if
+the launchpad ever fills), but it is a section, not the pitch.
 
 ### Token artwork
 
