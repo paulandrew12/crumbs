@@ -179,3 +179,22 @@ footer.foot {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* wallet-adapter ships a purple button; bring it onto our palette */
+.wallet-adapter-button-trigger {
+  background: var(--accent) !important;
+  color: var(--accent-ink) !important;
+  font-family: var(--sans) !important;
+  font-weight: 600 !important;
+  height: 40px !important;
+  border-radius: 5px !important;
+}
+.wallet-adapter-button-trigger:not([disabled]):hover {
+  background: color-mix(in srgb, var(--accent) 85%, white) !important;
+}
+.wallet-adapter-modal-wrapper {
+  background: var(--surface) !important;
+  border: 1px solid var(--line);
+}
+.wallet-adapter-modal-title { color: var(--ink) !important; }
+.wallet-adapter-modal-list li button { background: var(--raised) !important; color: var(--ink) !important; }
